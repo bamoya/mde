@@ -347,6 +347,182 @@ public class MicroserviceDSLGenerator extends AbstractGenerator {
         fsa.generateFile(servicePath + "pom.xml", pomContent.toString());
     }
 
+    private void generateServiceApplicationYml(Service service, String servicePath, IFileSystemAccess2 fsa) {
+        StringBuilder ymlContent = new StringBuilder();
+        boolean hasSpringConfig = false;
+
+        // Process server configuration
+        for (ServiceConfigEntry config : service.getConfiguration()) {
+            if (config instanceof ServerConfig) {
+                ServerConfig serverConfig = (ServerConfig) config;
+                ymlContent.append("server:\n")
+                        .append("  port: ").append(serverConfig.getPort()).append("\n");
+
+                // Add context-path if specified
+                if (serverConfig.getContextPath() != null && !serverConfig.getContextPath().isEmpty()) {
+                    ymlContent.append("  servlet:\n")
+                            .append("    context-path: ").append(serverConfig.getContextPath().replace("\"", "")).append("\n");
+                }
+                ymlContent.append("\n");
+            }
+        }
+
+        // Start spring configuration block
+        ymlContent.append("spring:\n");
+
+        // Process application configuration
+        for (ServiceConfigEntry config : service.getConfiguration()) {
+            if (config instanceof ApplicationConfig) {
+                ApplicationConfig appConfig = (ApplicationConfig) config;
+                hasSpringConfig = true;
+
+                // Add application name if specified
+                if (appConfig.getAppName() != null && !appConfig.getAppName().isEmpty()) {
+                    ymlContent.append("  application:\n")
+                            .append("    name: ").append(appConfig.getAppName().replace("\"", "")).append("\n");
+                }
+
+                // Add profile if specified
+                if (appConfig.getProfile() != null && !appConfig.getProfile().isEmpty()) {
+                    ymlContent.append("  profiles:\n")
+                            .append("    active: ").append(appConfig.getProfile().replace("\"", "")).append("\n");
+                }
+            }
+        }
+
+        // Process database configuration immediately after application config
+        for (ServiceConfigEntry config : service.getConfiguration()) {
+            if (config instanceof DatabaseConfig) {
+                DatabaseConfig dbConfig = (DatabaseConfig) config;
+                hasSpringConfig = true;
+
+                ymlContent.append("  datasource:\n")
+                        .append("    url: ").append(dbConfig.getDbUrl().replace("\"", "")).append("\n")
+                        .append("    username: ").append(dbConfig.getDbUsername().replace("\"", "")).append("\n")
+                        .append("    password: ").append(dbConfig.getDbPassword().replace("\"", "")).append("\n");
+
+                // Add JPA DDL configuration if specified
+                if (dbConfig.getDdl() != null) {
+                    ymlContent.append("  jpa:\n")
+                            .append("    hibernate:\n")
+                            .append("      ddl-auto: ").append(dbConfig.getDdl().toString().toLowerCase()).append("\n");
+                }
+            }
+        }
+
+        // Add a newline after spring configuration if it was used
+        if (hasSpringConfig) {
+            ymlContent.append("\n");
+        }
+
+        // Process logging configuration (moved after database config)
+        for (ServiceConfigEntry config : service.getConfiguration()) {
+            if (config instanceof ApplicationConfig) {
+                ApplicationConfig appConfig = (ApplicationConfig) config;
+                if (appConfig.getLoggingLevel() != null) {
+                    ymlContent.append("logging:\n")
+                            .append("  level:\n")
+                            .append("    root: ").append(appConfig.getLoggingLevel().toString()).append("\n\n");
+                }
+            }
+        }
+
+        // Process actuator configuration
+        for (ServiceConfigEntry config : service.getConfiguration()) {
+            if (config instanceof ActuatorConfig) {
+                ActuatorConfig actuatorConfig = (ActuatorConfig) config;
+                ymlContent.append("management:\n");
+
+                // Add healthcheck path if specified
+                if (actuatorConfig.getHealthcheckPath() != null && !actuatorConfig.getHealthcheckPath().isEmpty()) {
+                    ymlContent.append("  endpoints:\n")
+                            .append("    web:\n")
+                            .append("      base-path: ").append(actuatorConfig.getHealthcheckPath().replace("\"", "")).append("\n");
+                }
+
+                // Add metrics configuration if specified
+                if (actuatorConfig.getMetricsEnabled() != null) {
+                    ymlContent.append("  endpoints:\n")
+                            .append("    metrics:\n")
+                            .append("      enabled: ").append(actuatorConfig.getMetricsEnabled()).append("\n");
+                }
+
+                // Add info configuration if specified
+                if (actuatorConfig.getInfoEnabled() != null) {
+                    ymlContent.append("  endpoints:\n")
+                            .append("    info:\n")
+                            .append("      enabled: ").append(actuatorConfig.getInfoEnabled()).append("\n\n");
+                }
+            }
+        }
+
+        // Add Eureka client configuration
+        ymlContent.append("eureka:\n")
+                .append("  client:\n")
+                .append("    serviceUrl:\n")
+                .append("      defaultZone: http://localhost:8761/eureka/\n");
+
+        fsa.generateFile(servicePath + "src/main/resources/application.yml", ymlContent.toString());
+    }
+
+
+    // To-do Hajar & Fatiha
+    private void generateServiceMainClass(Service service, Model model, String basePackagePath, String servicePath, IFileSystemAccess2 fsa) {
+        StringBuilder mainClass = new StringBuilder();
+
+        // Package declaration
+        mainClass.append("package ").append(model.getGroupName()).append(".").append(service.getName()).append(";\n\n");
+
+        // Imports
+        mainClass.append("import org.springframework.boot.SpringApplication;\n")
+                .append("import org.springframework.boot.autoconfigure.SpringBootApplication;\n")
+                .append("import org.springframework.cloud.client.discovery.EnableDiscoveryClient;\n");
+
+        // Add JPA import if needed
+        boolean hasJpa = service.getDependencies().contains(Dependency.JPA);
+        if (hasJpa) {
+            mainClass.append("import org.springframework.data.jpa.repository.config.EnableJpaRepositories;\n");
+        }
+
+        mainClass.append("\n");
+
+        // Class annotations
+        mainClass.append("@SpringBootApplication\n")
+                .append("@EnableDiscoveryClient\n");
+
+        if (hasJpa) {
+            mainClass.append("@EnableJpaRepositories\n");
+        }
+
+        // Class declaration
+        String className = capitalize(service.getName()) + "Application";
+        mainClass.append("public class ").append(className).append(" {\n\n")
+                .append("    public static void main(String[] args) {\n")
+                .append("        SpringApplication.run(").append(className).append(".class, args);\n")
+                .append("    }\n");
+
+        // Add basic health check endpoint if actuator is enabled
+        if (service.getDependencies().contains(Dependency.ACTUATOR)) {
+            mainClass.append("\n    @RestController\n")
+                    .append("    public static class HealthController {\n\n")
+                    .append("        @GetMapping(\"/health\")\n")
+                    .append("        public ResponseEntity<String> health() {\n")
+                    .append("            return ResponseEntity.ok(\"Service is running\");\n")
+                    .append("        }\n")
+                    .append("    }\n");
+        }
+
+        mainClass.append("}\n");
+
+        // Generate the file
+        String filePath = servicePath + "src/main/java/" + basePackagePath + "/" +
+                service.getName().toLowerCase() + "/" + className + ".java";
+        fsa.generateFile(filePath, mainClass.toString());
+
+        // Generate base package structure
+        generatePackageStructure(service, model, basePackagePath, servicePath, fsa);
+    }
+
     private void generatePackageStructure(Service service, Model model, String basePackagePath, String servicePath, IFileSystemAccess2 fsa) {
         String basePath = servicePath + "src/main/java/" + basePackagePath + "/" + service.getName().toLowerCase() + "/";
 
