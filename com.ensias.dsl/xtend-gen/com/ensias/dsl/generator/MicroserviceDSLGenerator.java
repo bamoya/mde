@@ -381,3 +381,28 @@ private void generateServicePom(Service service, Model model, String servicePath
 
     fsa.generateFile(servicePath + "pom.xml", pomContent.toString());
 }
+
+
+// Helper method to generate package structure
+// to-do hajar & fatiha
+private void generatePackageStructure(Service service, Model model, String basePackagePath, String servicePath, IFileSystemAccess2 fsa) {
+    String basePath = servicePath + "src/main/java/" + basePackagePath + "/" + service.getName().toLowerCase() + "/";
+
+    // Create basic package structure
+    String[] packages = {"controller", "service", "model", "repository", "config"};
+
+    for (String pkg : packages) {
+        String packagePath = basePath + pkg;
+        // Create empty .gitkeep file to maintain directory structure
+        fsa.generateFile(packagePath + "/.gitkeep", "");
+    }
+}
+
+// Helper method to capitalize first letter
+
+private String capitalize(String str) {
+    if (str == null || str.isEmpty()) {
+        return str;
+    }
+    return str.substring(0, 1).toUpperCase() + str.substring(1);
+}
