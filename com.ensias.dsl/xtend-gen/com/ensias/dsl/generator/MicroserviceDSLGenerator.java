@@ -273,3 +273,17 @@ public class MicroserviceDSLGenerator extends AbstractGenerator {
         }
     }
 }
+
+private void generateMicroservice(Service service, Model model, IFileSystemAccess2 fsa) {
+    String basePackagePath = model.getGroupName().replace(".", "/");
+    String servicePath = service.getName() + "/";
+
+    // Generate pom.xml with dependencies
+    generateServicePom(service, model, servicePath, fsa);
+
+    // Generate application.yml
+    generateServiceApplicationYml(service, servicePath, fsa);
+
+    // Generate main application class
+    generateServiceMainClass(service, model, basePackagePath, servicePath, fsa);
+}
