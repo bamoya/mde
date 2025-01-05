@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: com.ensias.dsl.ui
+Bundle-ManifestVersion: 2
+Bundle-Name: com.ensias.dsl.ui
+Bundle-Vendor: My Company
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.ensias.dsl.ui; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: com.ensias.dsl,
+ com.ensias.dsl.ide,
+ org.eclipse.xtext.ui,
+ org.eclipse.xtext.ui.shared,
+ org.eclipse.xtext.ui.codetemplates.ui,
+ org.eclipse.ui.editors;bundle-version="3.14.300",
+ org.eclipse.ui.ide;bundle-version="3.18.500",
+ org.eclipse.ui,
+ org.eclipse.compare,
+ org.eclipse.xtext.builder
+Import-Package: org.apache.log4j
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Export-Package: com.ensias.dsl.ui.internal,
+ com.ensias.dsl.ui.contentassist,
+ com.ensias.dsl.ui.quickfix
+Bundle-Activator: com.ensias.dsl.ui.internal.DslActivator

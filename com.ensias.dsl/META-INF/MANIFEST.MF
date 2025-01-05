@@ -1,0 +1,29 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: com.ensias.dsl
+Bundle-ManifestVersion: 2
+Bundle-Name: com.ensias.dsl
+Bundle-Vendor: My Company
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.ensias.dsl; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.xtext,
+ org.eclipse.xtext.xbase,
+ org.eclipse.equinox.common;bundle-version="3.16.0",
+ org.eclipse.emf.ecore,
+ org.eclipse.xtext.xbase.lib;bundle-version="2.37.0",
+ org.eclipse.emf.common,
+ org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
+ org.eclipse.emf.ecore.xcore.lib
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Export-Package: com.ensias.dsl.microserviceDSL.util,
+ com.ensias.dsl.generator,
+ com.ensias.dsl.microserviceDSL,
+ com.ensias.dsl,
+ com.ensias.dsl.parser.antlr.internal,
+ com.ensias.dsl.parser.antlr,
+ com.ensias.dsl.scoping,
+ com.ensias.dsl.services,
+ com.ensias.dsl.validation,
+ com.ensias.dsl.serializer,
+ com.ensias.dsl.microserviceDSL.impl
+Import-Package: org.apache.log4j

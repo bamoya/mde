@@ -1,0 +1,98 @@
+grammar com.ensias.dsl.MicroserviceDSL with org.eclipse.xtext.common.Terminals
+
+generate microserviceDSL "http://www.ensias.com/dsl/MicroserviceDSL"
+
+
+Model:
+    'project' name=ID
+    'group' groupName=QualifiedName
+    'version' version=STRING
+    'description' description=STRING
+    '{'
+    discovery=Discovery
+    configServer=ConfigServer
+    services+=Service*
+    gateway=Gateway    
+    '}';
+
+Discovery:
+    'discovery' name=ID '{'
+	    'port' port=INT
+	    ('defaultZone' defaultZone=STRING)?
+	    'dependencies' '{' customDeps+=Dependency* '}'
+    '}';
+
+Gateway:
+    'gateway' name=ID '{'
+	    'port' port=INT
+	    ('routes' '{' routes+=RouteConfig* '}')?
+	    'dependencies' '{' customDeps+=Dependency* '}'
+    '}';
+
+RouteConfig:
+    'route' '{'
+	    'path' path=STRING
+	    'service' service=[Service|ID]  // This establishes the cross-reference using [Service|ID]
+    '}';
+
+ConfigServer:
+    'config-server' name=ID '{'
+	    'port' port=INT
+	    'git-uri' gitUri=STRING
+	    ('git-branch' gitBranch=STRING)?
+	    'dependencies' '{' customDeps+=Dependency* '}'
+    '}';
+
+Service:
+    'service' name=ID '{'
+    'dependencies' '{' dependencies+=Dependency* '}'
+    'config' '{' configuration+=ServiceConfigEntry* '}'
+    '}';
+
+ServiceConfigEntry:
+    ServerConfig | ApplicationConfig | DatabaseConfig | ActuatorConfig;
+
+ServerConfig:
+    'server-config' '{'
+	    'port' port=INT
+	    ('context-path' contextPath=STRING)?
+    '}';
+
+ApplicationConfig:
+    'application-config' '{'
+		('name' appName=STRING)?
+        ('profile' profile=STRING)?
+        ('logging-level' loggingLevel=LogLevel)?	
+    '}';
+
+DatabaseConfig:
+    'database-config' '{'
+	    'url' dbUrl=STRING
+	    'username' dbUsername=STRING
+	    'password' dbPassword=STRING
+	    'driver' driver=DatabaseDriver
+	    ('ddl' ddl=DdlType )?
+    '}';
+
+ActuatorConfig:
+    'actuator-config' '{'
+        ('healthcheck-path' healthcheckPath=STRING)?
+        ('metrics-enabled' metricsEnabled=('true'|'false'))?
+        ('info-enabled' infoEnabled=('true'|'false'))?
+    '}';
+
+
+enum Dependency:
+    JPA | SPRING_WEB | EUREKA_CLIENT | CONFIG_CLIENT | ACTUATOR | LOMBOK ;
+
+enum DatabaseDriver:
+    MYSQL | POSTGRESQL | H2;
+
+enum DdlType:
+    CREATE | CREATE_UPDATE;
+
+enum LogLevel:
+    INFO | DEBUG | WARN | ERROR | TRACE;
+
+QualifiedName:
+    ID ('.' ID)*;

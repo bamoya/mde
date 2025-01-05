@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="microserviceDSL" nsURI="http://www.ensias.com/dsl/MicroserviceDSL"
+    nsPrefix="microserviceDSL">
+  <eClassifiers xsi:type="ecore:EClass" name="Model">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="groupName" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="discovery" eType="#//Discovery"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="configServer" eType="#//ConfigServer"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="services" upperBound="-1"
+        eType="#//Service" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="gateway" eType="#//Gateway"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Discovery">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="port" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="defaultZone" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="customDeps" unique="false"
+        upperBound="-1" eType="#//Dependency"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Gateway">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="port" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="routes" upperBound="-1"
+        eType="#//RouteConfig" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="customDeps" unique="false"
+        upperBound="-1" eType="#//Dependency"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="RouteConfig">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="path" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="service" eType="#//Service"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ConfigServer">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="port" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gitUri" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gitBranch" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="customDeps" unique="false"
+        upperBound="-1" eType="#//Dependency"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Service">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dependencies" unique="false"
+        upperBound="-1" eType="#//Dependency"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="configuration" upperBound="-1"
+        eType="#//ServiceConfigEntry" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ServiceConfigEntry"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ServerConfig" eSuperTypes="#//ServiceConfigEntry">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="port" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="contextPath" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ApplicationConfig" eSuperTypes="#//ServiceConfigEntry">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="appName" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="profile" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="loggingLevel" eType="#//LogLevel"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DatabaseConfig" eSuperTypes="#//ServiceConfigEntry">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dbUrl" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dbUsername" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dbPassword" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="driver" eType="#//DatabaseDriver"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="ddl" eType="#//DdlType"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActuatorConfig" eSuperTypes="#//ServiceConfigEntry">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="healthcheckPath" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="metricsEnabled" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="infoEnabled" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Dependency">
+    <eLiterals name="JPA" literal="JPA"/>
+    <eLiterals name="SPRING_WEB" value="1" literal="SPRING_WEB"/>
+    <eLiterals name="EUREKA_CLIENT" value="2" literal="EUREKA_CLIENT"/>
+    <eLiterals name="CONFIG_CLIENT" value="3" literal="CONFIG_CLIENT"/>
+    <eLiterals name="ACTUATOR" value="4" literal="ACTUATOR"/>
+    <eLiterals name="LOMBOK" value="5" literal="LOMBOK"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="DatabaseDriver">
+    <eLiterals name="MYSQL" literal="MYSQL"/>
+    <eLiterals name="POSTGRESQL" value="1" literal="POSTGRESQL"/>
+    <eLiterals name="H2" value="2" literal="H2"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="DdlType">
+    <eLiterals name="CREATE" literal="CREATE"/>
+    <eLiterals name="CREATE_UPDATE" value="1" literal="CREATE_UPDATE"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="LogLevel">
+    <eLiterals name="INFO" literal="INFO"/>
+    <eLiterals name="DEBUG" value="1" literal="DEBUG"/>
+    <eLiterals name="WARN" value="2" literal="WARN"/>
+    <eLiterals name="ERROR" value="3" literal="ERROR"/>
+    <eLiterals name="TRACE" value="4" literal="TRACE"/>
+  </eClassifiers>
+</ecore:EPackage>
