@@ -1,4 +1,4 @@
-# Spring Boot Microservice Project Generator DSL
+# Spring Boot Microservice Project Starter Generator DSL
 
 ## Introduction
 
