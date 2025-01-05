@@ -163,6 +163,7 @@ public class MicroserviceDSLGenerator extends AbstractGenerator {
         fsa.generateFile(servicePath + "src/main/java/" + basePackagePath + "/discovery/DiscoveryApplication.java",
                 mainClass.toString());
     }
+
     
     // To-do Bassim
     private void generateConfigServer(ConfigServer configServer, Model model, IFileSystemAccess2 fsa) {
@@ -231,6 +232,107 @@ public class MicroserviceDSLGenerator extends AbstractGenerator {
         fsa.generateFile(servicePath + "src/main/java/" + basePackagePath + "/config/ConfigServerApplication.java",
             mainClass.toString());
     }
+
+
+    // To-do Nour
+    private void generateGatewayService(Gateway gateway, Model model, IFileSystemAccess2 fsa) {
+        String basePackagePath = model.getGroupName().replace(".", "/");
+        String servicePath = gateway.getName() + "/";
+
+        // Generate pom.xml
+        StringBuilder pomContent = new StringBuilder();
+        pomContent.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+                 .append("<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\n")
+                 .append("    <modelVersion>4.0.0</modelVersion>\n\n")
+                 .append("    <artifactId>").append(gateway.getName()).append("</artifactId>\n\n")
+                 .append("    <parent>\n")
+                 .append("        <groupId>").append(model.getGroupName()).append("</groupId>\n")
+                 .append("        <artifactId>").append(model.getName()).append("</artifactId>\n")
+                 .append("        <version>").append(model.getVersion().replace("\"", "")).append("</version>\n")
+                 .append("    </parent>\n\n")
+                 .append("    <properties>\n")
+                 .append("        <spring-cloud.version>2021.0.3</spring-cloud.version>\n")
+                 .append("    </properties>\n\n")
+                 .append("    <dependencies>\n")
+                 .append("        <dependency>\n")
+                 .append("            <groupId>org.springframework.cloud</groupId>\n")
+                 .append("            <artifactId>spring-cloud-starter-gateway</artifactId>\n")
+                 .append("        </dependency>\n")
+                 .append("        <dependency>\n")
+                 .append("            <groupId>org.springframework.cloud</groupId>\n")
+                 .append("            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>\n")
+                 .append("        </dependency>\n");
+
+        // Add custom dependencies
+        for (Dependency dep : gateway.getCustomDeps()) {
+            addDependencyToPom(pomContent, dep);
+        }
+
+        pomContent.append("    </dependencies>\n\n")
+                 .append("    <dependencyManagement>\n")
+                 .append("        <dependencies>\n")
+                 .append("            <dependency>\n")
+                 .append("                <groupId>org.springframework.cloud</groupId>\n")
+                 .append("                <artifactId>spring-cloud-dependencies</artifactId>\n")
+                 .append("                <version>${spring-cloud.version}</version>\n")
+                 .append("                <type>pom</type>\n")
+                 .append("                <scope>import</scope>\n")
+                 .append("            </dependency>\n")
+                 .append("        </dependencies>\n")
+                 .append("    </dependencyManagement>\n")
+                 .append("</project>");
+
+        fsa.generateFile(servicePath + "pom.xml", pomContent.toString());
+
+        // Generate application.yml
+        StringBuilder ymlContent = new StringBuilder();
+        ymlContent.append("server:\n")
+                 .append("  port: ").append(gateway.getPort()).append("\n\n")
+                 .append("spring:\n")
+                 .append("  application:\n")
+                 .append("    name: ").append(gateway.getName()).append("\n")
+                 .append("  cloud:\n")
+                 .append("    gateway:\n")
+                 .append("      discovery:\n")
+                 .append("        locator:\n")
+                 .append("          enabled: true\n");
+
+        // Add routes configuration if present
+        if (!gateway.getRoutes().isEmpty()) {
+            ymlContent.append("      routes:\n");
+            for (RouteConfig route : gateway.getRoutes()) {
+                ymlContent.append("      - id: ").append(route.getService().getName()).append("\n")
+                         .append("        uri: lb://").append(route.getService().getName().toUpperCase()).append("\n")
+                         .append("        predicates:\n")
+                         .append("        - Path=").append(route.getPath()).append("\n");
+            }
+        }
+
+        ymlContent.append("\neureka:\n")
+                 .append("  client:\n")
+                 .append("    serviceUrl:\n")
+                 .append("      defaultZone: http://localhost:8761/eureka/\n");
+
+        fsa.generateFile(servicePath + "src/main/resources/application.yml", ymlContent.toString());
+
+        // Generate main application class
+        StringBuilder mainClass = new StringBuilder();
+        mainClass.append("package ").append(model.getGroupName()).append(".gateway;\n\n")
+                .append("import org.springframework.boot.SpringApplication;\n")
+                .append("import org.springframework.boot.autoconfigure.SpringBootApplication;\n")
+                .append("import org.springframework.cloud.client.discovery.EnableDiscoveryClient;\n\n")
+                .append("@SpringBootApplication\n")
+                .append("@EnableDiscoveryClient\n")
+                .append("public class GatewayApplication {\n\n")
+                .append("    public static void main(String[] args) {\n")
+                .append("        SpringApplication.run(GatewayApplication.class, args);\n")
+                .append("    }\n")
+                .append("}\n");
+
+        fsa.generateFile(servicePath + "src/main/java/" + basePackagePath + "/gateway/GatewayApplication.java",
+                mainClass.toString());
+    }
+
 
 
 
@@ -545,6 +647,33 @@ public class MicroserviceDSLGenerator extends AbstractGenerator {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
     
+
+    // Helper methods for database configuration
+    // to-do nour
+    private String getDriverClassName(DatabaseDriver driver) {
+        switch (driver) {
+            case MYSQL:
+                return "com.mysql.cj.jdbc.Driver";
+            case POSTGRESQL:
+                return "org.postgresql.Driver";
+            case H2:
+                return "org.h2.Driver";
+            default:
+                return "com.mysql.cj.jdbc.Driver";
+        }
+    }
+
+    // to-do nour
+    private String getDdlMode(DdlType ddl) {
+        switch (ddl) {
+            case CREATE:
+                return "create";
+            case CREATE_UPDATE:
+                return "update";
+            default:
+                return "none";
+        }
+    }
     
     // Helper method to add dependencies to pom.xml
     // to-do bassim
