@@ -18,6 +18,8 @@ This DSL addresses these challenges by providing a simple, declarative way to de
 
 ## Grammar Definition
 
+![Meta Model](./images/META-MODEL.jpg)
+
 ### Project Structure
 
 The root element containing all microservice components:
