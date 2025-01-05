@@ -231,8 +231,143 @@ public class MicroserviceDSLGenerator extends AbstractGenerator {
         fsa.generateFile(servicePath + "src/main/java/" + basePackagePath + "/config/ConfigServerApplication.java",
             mainClass.toString());
     }
-    
 
+
+
+
+    private void generateMicroservice(Service service, Model model, IFileSystemAccess2 fsa) {
+        String basePackagePath = model.getGroupName().replace(".", "/");
+        String servicePath = service.getName() + "/";
+
+        // Generate pom.xml with dependencies
+        generateServicePom(service, model, servicePath, fsa);
+
+        // Generate application.yml
+        generateServiceApplicationYml(service, servicePath, fsa);
+
+        // Generate main application class
+        generateServiceMainClass(service, model, basePackagePath, servicePath, fsa);
+    }
+
+
+
+    // ------------------------------------- Helper Functions --------------------------------------------
+
+    private void generateServicePom(Service service, Model model, String servicePath, IFileSystemAccess2 fsa) {
+        StringBuilder pomContent = new StringBuilder();
+        pomContent.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+                .append("<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\n")
+                .append("    <modelVersion>4.0.0</modelVersion>\n\n")
+                .append("    <artifactId>").append(service.getName()).append("</artifactId>\n\n")
+                .append("    <parent>\n")
+                .append("        <groupId>").append(model.getGroupName()).append("</groupId>\n")
+                .append("        <artifactId>").append(model.getName()).append("</artifactId>\n")
+                .append("        <version>").append(model.getVersion().replace("\"", "")).append("</version>\n")
+                .append("    </parent>\n\n")
+                .append("    <dependencies>\n");
+
+        // Add Spring Boot Starter Web dependency
+        pomContent.append("        <dependency>\n")
+                .append("            <groupId>org.springframework.boot</groupId>\n")
+                .append("            <artifactId>spring-boot-starter-web</artifactId>\n")
+                .append("        </dependency>\n");
+
+        // Add Eureka Client dependency
+        pomContent.append("        <dependency>\n")
+                .append("            <groupId>org.springframework.cloud</groupId>\n")
+                .append("            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>\n")
+                .append("        </dependency>\n");
+
+        // Process additional dependencies based on service configuration
+        for (Dependency dependency : service.getDependencies()) {
+            addDependencyToPom(pomContent, dependency);
+        }
+
+        // Add database driver dependency if database config exists
+        for (ServiceConfigEntry config : service.getConfiguration()) {
+            if (config instanceof DatabaseConfig) {
+                DatabaseConfig dbConfig = (DatabaseConfig) config;
+                switch (dbConfig.getDriver()) {
+                    case MYSQL:
+                        pomContent.append("        <dependency>\n")
+                                .append("            <groupId>mysql</groupId>\n")
+                                .append("            <artifactId>mysql-connector-java</artifactId>\n")
+                                .append("            <scope>runtime</scope>\n")
+                                .append("        </dependency>\n");
+                        break;
+                    case POSTGRESQL:
+                        pomContent.append("        <dependency>\n")
+                                .append("            <groupId>org.postgresql</groupId>\n")
+                                .append("            <artifactId>postgresql</artifactId>\n")
+                                .append("            <scope>runtime</scope>\n")
+                                .append("        </dependency>\n");
+                        break;
+                    case H2:
+                        pomContent.append("        <dependency>\n")
+                                .append("            <groupId>com.h2database</groupId>\n")
+                                .append("            <artifactId>h2</artifactId>\n")
+                                .append("            <scope>runtime</scope>\n")
+                                .append("        </dependency>\n");
+                        break;
+                }
+            }
+        }
+
+        // Add Spring Cloud dependency management
+        pomContent.append("    </dependencies>\n\n")
+                .append("    <dependencyManagement>\n")
+                .append("        <dependencies>\n")
+                .append("            <dependency>\n")
+                .append("                <groupId>org.springframework.cloud</groupId>\n")
+                .append("                <artifactId>spring-cloud-dependencies</artifactId>\n")
+                .append("                <version>2021.0.3</version>\n")
+                .append("                <type>pom</type>\n")
+                .append("                <scope>import</scope>\n")
+                .append("            </dependency>\n")
+                .append("        </dependencies>\n")
+                .append("    </dependencyManagement>\n\n")
+                .append("    <build>\n")
+                .append("        <plugins>\n")
+                .append("            <plugin>\n")
+                .append("                <groupId>org.springframework.boot</groupId>\n")
+                .append("                <artifactId>spring-boot-maven-plugin</artifactId>\n")
+                .append("                <configuration>\n")
+                .append("                    <excludes>\n")
+                .append("                        <exclude>\n")
+                .append("                            <groupId>org.projectlombok</groupId>\n")
+                .append("                            <artifactId>lombok</artifactId>\n")
+                .append("                        </exclude>\n")
+                .append("                    </excludes>\n")
+                .append("                </configuration>\n")
+                .append("            </plugin>\n")
+                .append("        </plugins>\n")
+                .append("    </build>\n")
+                .append("</project>");
+
+        fsa.generateFile(servicePath + "pom.xml", pomContent.toString());
+    }
+
+    private void generatePackageStructure(Service service, Model model, String basePackagePath, String servicePath, IFileSystemAccess2 fsa) {
+        String basePath = servicePath + "src/main/java/" + basePackagePath + "/" + service.getName().toLowerCase() + "/";
+
+        // Create basic package structure
+        String[] packages = {"controller", "service", "model", "repository", "config"};
+
+        for (String pkg : packages) {
+            String packagePath = basePath + pkg;
+            // Create empty .gitkeep file to maintain directory structure
+            fsa.generateFile(packagePath + "/.gitkeep", "");
+        }
+    }
+
+    // Helper method to capitalize first letter
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
     
     
     // Helper method to add dependencies to pom.xml
@@ -272,137 +407,4 @@ public class MicroserviceDSLGenerator extends AbstractGenerator {
                 break;
         }
     }
-}
-
-private void generateMicroservice(Service service, Model model, IFileSystemAccess2 fsa) {
-    String basePackagePath = model.getGroupName().replace(".", "/");
-    String servicePath = service.getName() + "/";
-
-    // Generate pom.xml with dependencies
-    generateServicePom(service, model, servicePath, fsa);
-
-    // Generate application.yml
-    generateServiceApplicationYml(service, servicePath, fsa);
-
-    // Generate main application class
-    generateServiceMainClass(service, model, basePackagePath, servicePath, fsa);
-}
-
-private void generateServicePom(Service service, Model model, String servicePath, IFileSystemAccess2 fsa) {
-    StringBuilder pomContent = new StringBuilder();
-    pomContent.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-            .append("<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\n")
-            .append("    <modelVersion>4.0.0</modelVersion>\n\n")
-            .append("    <artifactId>").append(service.getName()).append("</artifactId>\n\n")
-            .append("    <parent>\n")
-            .append("        <groupId>").append(model.getGroupName()).append("</groupId>\n")
-            .append("        <artifactId>").append(model.getName()).append("</artifactId>\n")
-            .append("        <version>").append(model.getVersion().replace("\"", "")).append("</version>\n")
-            .append("    </parent>\n\n")
-            .append("    <dependencies>\n");
-
-    // Add Spring Boot Starter Web dependency
-    pomContent.append("        <dependency>\n")
-            .append("            <groupId>org.springframework.boot</groupId>\n")
-            .append("            <artifactId>spring-boot-starter-web</artifactId>\n")
-            .append("        </dependency>\n");
-
-    // Add Eureka Client dependency
-    pomContent.append("        <dependency>\n")
-            .append("            <groupId>org.springframework.cloud</groupId>\n")
-            .append("            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>\n")
-            .append("        </dependency>\n");
-
-    // Process additional dependencies based on service configuration
-    for (Dependency dependency : service.getDependencies()) {
-        addDependencyToPom(pomContent, dependency);
-    }
-
-    // Add database driver dependency if database config exists
-    for (ServiceConfigEntry config : service.getConfiguration()) {
-        if (config instanceof DatabaseConfig) {
-            DatabaseConfig dbConfig = (DatabaseConfig) config;
-            switch (dbConfig.getDriver()) {
-                case MYSQL:
-                    pomContent.append("        <dependency>\n")
-                            .append("            <groupId>mysql</groupId>\n")
-                            .append("            <artifactId>mysql-connector-java</artifactId>\n")
-                            .append("            <scope>runtime</scope>\n")
-                            .append("        </dependency>\n");
-                    break;
-                case POSTGRESQL:
-                    pomContent.append("        <dependency>\n")
-                            .append("            <groupId>org.postgresql</groupId>\n")
-                            .append("            <artifactId>postgresql</artifactId>\n")
-                            .append("            <scope>runtime</scope>\n")
-                            .append("        </dependency>\n");
-                    break;
-                case H2:
-                    pomContent.append("        <dependency>\n")
-                            .append("            <groupId>com.h2database</groupId>\n")
-                            .append("            <artifactId>h2</artifactId>\n")
-                            .append("            <scope>runtime</scope>\n")
-                            .append("        </dependency>\n");
-                    break;
-            }
-        }
-    }
-
-    // Add Spring Cloud dependency management
-    pomContent.append("    </dependencies>\n\n")
-            .append("    <dependencyManagement>\n")
-            .append("        <dependencies>\n")
-            .append("            <dependency>\n")
-            .append("                <groupId>org.springframework.cloud</groupId>\n")
-            .append("                <artifactId>spring-cloud-dependencies</artifactId>\n")
-            .append("                <version>2021.0.3</version>\n")
-            .append("                <type>pom</type>\n")
-            .append("                <scope>import</scope>\n")
-            .append("            </dependency>\n")
-            .append("        </dependencies>\n")
-            .append("    </dependencyManagement>\n\n")
-            .append("    <build>\n")
-            .append("        <plugins>\n")
-            .append("            <plugin>\n")
-            .append("                <groupId>org.springframework.boot</groupId>\n")
-            .append("                <artifactId>spring-boot-maven-plugin</artifactId>\n")
-            .append("                <configuration>\n")
-            .append("                    <excludes>\n")
-            .append("                        <exclude>\n")
-            .append("                            <groupId>org.projectlombok</groupId>\n")
-            .append("                            <artifactId>lombok</artifactId>\n")
-            .append("                        </exclude>\n")
-            .append("                    </excludes>\n")
-            .append("                </configuration>\n")
-            .append("            </plugin>\n")
-            .append("        </plugins>\n")
-            .append("    </build>\n")
-            .append("</project>");
-
-    fsa.generateFile(servicePath + "pom.xml", pomContent.toString());
-}
-
-
-// Helper method to generate package structure
-// to-do hajar & fatiha
-private void generatePackageStructure(Service service, Model model, String basePackagePath, String servicePath, IFileSystemAccess2 fsa) {
-    String basePath = servicePath + "src/main/java/" + basePackagePath + "/" + service.getName().toLowerCase() + "/";
-
-    // Create basic package structure
-    String[] packages = {"controller", "service", "model", "repository", "config"};
-
-    for (String pkg : packages) {
-        String packagePath = basePath + pkg;
-        // Create empty .gitkeep file to maintain directory structure
-        fsa.generateFile(packagePath + "/.gitkeep", "");
-    }
-}
-
-// Helper method to capitalize first letter
-
-private String capitalize(String str) {
-    if (str == null || str.isEmpty()) {
-        return str;
-    }
-    return str.substring(0, 1).toUpperCase() + str.substring(1);
 }
